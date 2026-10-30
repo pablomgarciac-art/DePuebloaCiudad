@@ -413,6 +413,17 @@ kbd{background:#ffffff1f;border:1px solid var(--line);border-radius:5px;padding:
 button.chip{border:1px solid #ffffff14;color:inherit;cursor:pointer;font-family:inherit}button.chip:hover{background:#ffffff2e}
 #zDay{font-size:22px!important}
 
+/* sin minimapa ni aviso de niebla */
+#mini,#fogNote{display:none!important}
+#zoomBox{bottom:14px}
+.mapopt{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mapopt label{display:block;position:relative;border:2px solid var(--line);border-radius:12px;padding:9px 11px;background:#ffffff0a;cursor:pointer}
+.mapopt input{position:absolute;opacity:0}
+.mapopt label.on{border-color:var(--accent);background:#e8a93b22}
+.mapopt b{font-size:15px}.mapopt small{display:block;color:var(--muted);margin-top:2px}
+@media (max-width:520px){.mapopt{grid-template-columns:1fr}}
+#ngGo.danger{background:linear-gradient(180deg,#ff9a85,#e0524a);border-color:#ff9a85;color:#fff;box-shadow:0 3px 0 #a02820}
+
 </style>
 </head>
 <body>
@@ -521,9 +532,7 @@ var CFG={
       desc:'Dinero casi ilimitado y sin gastos de mantenimiento: construye a tu aire.'}
   },
   RANKS:[{n:'Aldea',pop:0},{n:'Pueblo',pop:100},{n:'Villa',pop:400},{n:'Ciudad',pop:1500},{n:'Gran ciudad',pop:5000}],
-  TOWN_NAMES:['Valdeolivas','Santa Marina','Villanueva de la Encina','Puebla del Alcor','Alconchel de la Dehesa','Torrecillas de la Vera',
-    'Cañaveral del Sol','Fuente del Alcornoque','Monteferro','Valdelagrana','La Granja de Plasencia','San Martín del Encinar',
-    'Zarza de los Olivos','Burguillos del Guadiana','Navalvillar','Casas de la Jara']
+  TOWN_NAMES:['Cáceres','Plasencia','Coria','Trujillo','Navalmoral de la Mata','Jaraíz de la Vera','Cuacos de Yuste','Jarandilla de la Vera','Hervás','Valencia de Alcántara','Alcántara','Garrovillas de Alconétar','Brozas','Arroyo de la Luz','Malpartida de Cáceres','Montánchez','Logrosán','Guadalupe','Casar de Cáceres','Miajadas','Madroñera','Cabezuela del Valle','Jerte','Losar de la Vera','Villanueva de la Vera','Serradilla','Torrejón el Rubio','Talayuela','Moraleja','Hoyos','Gata','Robledillo de Gata','Aldeanueva del Camino','Baños de Montemayor','Garganta la Olla','Valverde de la Vera','Tornavacas','Piornal','Montehermoso','Cañaveral','Almaraz','Deleitosa','Berzocana','Badajoz','Mérida','Almendralejo','Don Benito','Villanueva de la Serena','Zafra','Olivenza','Llerena','Jerez de los Caballeros','Fuente de Cantos','Monesterio','Fregenal de la Sierra','Villafranca de los Barros','Los Santos de Maimona','Azuaga','Castuera','Cabeza del Buey','Puebla de Alcocer','Herrera del Duque','Talarrubias','Alburquerque','La Codosera','Montijo','Guareña','Villar del Rey','Barcarrota','Burguillos del Cerro','Feria','Zahínos','Oliva de la Frontera','Higuera la Real','Valverde de Leganés','Talavera la Real','La Albuera','Calamonte','Segura de León','Bienvenida','Puebla de la Calzada','Hornachos','Almendral','Alange','Fuente del Maestre','Aceuchal','Orellana la Vieja','Valdecaballeros','La Haba','Puebla de Sancho Pérez','Medina de las Torres','Santa Marta de los Barros','Salvatierra de los Barros']
 };
 CFG.SECONDS_PER_DAY_NORMAL=CFG.SECONDS_PER_MONTH_NORMAL/CFG.AVG_DAYS_PER_MONTH;
 
@@ -929,8 +938,8 @@ function analyze(S){
   }
   var A={roadNet:road,connected:conn,roads:0,roadsConn:0,roadKinds:{},roadUpkeep:0,capacity:0,dwellings:0,
     jobs:{retail:0,industry:0,office:0,public:0},retailW:0,industryW:0,officeW:0,jobsTotal:0,upkeep:0,
-    counts:{},catCounts:{},services:[],houses:[],cov:{},kinds:{},variety:0,unconnected:[]};
-  SVC_KEYS.forEach(function(s){A.cov[s]=0;});
+    counts:{},catCounts:{},services:[],houses:[],cov:{},covAny:{},kinds:{},variety:0,unconnected:[]};
+  SVC_KEYS.forEach(function(s){A.cov[s]=0;A.covAny[s]=0;});
   for(i=0;i<N;i++){
     var c=g[i];if(!c||c.t===undefined)continue;
     var df=DEFS[c.t];
@@ -968,15 +977,15 @@ function analyze(S){
   A.jobsTotal=A.jobs.retail+A.jobs.industry+A.jobs.office+A.jobs.public;
   A.variety=Object.keys(A.kinds).length;
   if(A.capacity>0){
-    var acc={};SVC_KEYS.forEach(function(s){acc[s]=0;});
+    var acc={},accA={};SVC_KEYS.forEach(function(s){acc[s]=0;accA[s]=0;});
     A.houses.forEach(function(h){
       var m={};
       A.services.forEach(function(s){
         if(Math.abs(s.cx-h.cx)+Math.abs(s.cy-h.cy)<=s.r)m[s.k]=(m[s.k]===undefined?1:m[s.k])*(1-s.p);
       });
-      for(var key in m)acc[key]+=h.cap*(1-m[key]);
+      for(var key in m){acc[key]+=h.cap*(1-m[key]);accA[key]+=h.cap;}
     });
-    SVC_KEYS.forEach(function(s){A.cov[s]=acc[s]/A.capacity;});
+    SVC_KEYS.forEach(function(s){A.cov[s]=acc[s]/A.capacity;A.covAny[s]=accA[s]/A.capacity;});
   }
   S._an=A;S._anV=S.gridVersion;return A;
 }
@@ -1001,14 +1010,14 @@ function satisfaction(S,A,L,pop){
   p.empleo=20*(L.workers>0?L.employed/L.workers:1);
   p.guarderia=SVC_MAX.kinder*c.kinder;p.colegio=SVC_MAX.primary*c.primary;p.instituto=SVC_MAX.secondary*c.secondary;
   p.fp=SVC_MAX.vocational*c.vocational;p.universidad=SVC_MAX.univ*c.univ;
-  p.sanidad=SVC_MAX.health*c.health;p.deporte=SVC_MAX.sport*c.sport;p.cultura=SVC_MAX.culture*c.culture;
+  p.sanidad=SVC_MAX.health*(0.5*c.health+0.5*(A.covAny.health||0));p.deporte=SVC_MAX.sport*c.sport;p.cultura=SVC_MAX.culture*c.culture;
   p.parques=SVC_MAX.park*c.park;p.transporte=SVC_MAX.transport*c.transport;p.plazas=SVC_MAX.plaza*c.plaza;
   p.alumbrado=SVC_MAX.light*c.light;p.mobiliario=SVC_MAX.furn*c.furn;
   p.comercio=4*commerceScore(A,pop)+6*varietyScore(A,pop);
   var rk=A.roadKinds;
   var pedN=0;Object.keys(rk).forEach(function(t){if(DEFS[t]&&DEFS[t].ped)pedN+=rk[t];});
   p.viales=Math.min(3,3*((pedN*0.6+(rk.paseo||0)*1.2)/Math.max(8,A.roads*0.3)));
-  p.contaminacion=-8*c.nuis;
+  p.contaminacion=-8*Math.max(0,c.nuis-0.05); /* un taller pequeño no cuenta como molestia */
   p.impuestos=-(S.taxRate-9)*1.5;
   p.hacinamiento=(A.capacity>0&&pop/A.capacity>0.95)?-3:0;
   p.deuda=S.money<0?-5:0;
@@ -1264,6 +1273,7 @@ function propSlotsAt(S,x,y){
   var i=idx(x,y);if(!S.explored[i]||S.ter[i]===1)return out;
   var c=S.grid[i];
   if(c&&c.t!==undefined&&DEFS[c.t].road){
+    if(DEFS[c.t].ped)return [0,1,2,3,4]; /* suelo peatonal: se puede amueblar entero */
     for(k=1;k<=4;k++){var nx=x+PDIR[k][0],ny=y+PDIR[k][1];if(!inb(nx,ny)||!isRoadCell(S.grid,idx(nx,ny)))out.push(k);}
   }else if(!c)out.push(0);
   return out;
@@ -1281,6 +1291,7 @@ function canPlaceProp(S,id,x,y,s){
   if(!inb(x,y))return {ok:false,why:'Fuera del mapa'};
   if(!S.explored[idx(x,y)])return {ok:false,why:'Terreno sin explorar: acércate para descubrirlo'};
   if(s<0||propSlotsAt(S,x,y).indexOf(s)<0)return {ok:false,why:'Ponlo en el borde de una calle, entre la casa y la carretera'};
+  if(df.vis&&df.vis.s==='sign'&&s===0&&S.grid[idx(x,y)])return {ok:false,why:'Las señales de tráfico van en calles con coches'};
   if(propIndex(S,x,y,s)>=0)return {ok:false,why:'Ya hay algo en ese sitio'};
   if(S.money<df.cost)return {ok:false,why:'Dinero insuficiente ('+df.cost+' €)'};
   return {ok:true,cost:df.cost};
@@ -1328,6 +1339,7 @@ function demolish(S,x,y){
     return {ok:false,why:'No hay nada que demoler'};
   }
   var c=S.grid[o],df=DEFS[c.t];
+  if(df.ped&&S.props&&propIndex(S,x,y,0)+propIndex(S,x,y,1)+propIndex(S,x,y,2)+propIndex(S,x,y,3)+propIndex(S,x,y,4)>-5){if(removeProps(S,x,y)){S.month.demolished++;return {ok:true};}}
   if(df.fixed)return {ok:false,why:'El Ayuntamiento no se puede demoler'};
   var ox=o%CFG.COLS,oy=(o/CFG.COLS)|0,u,v,f=footprint(c.t,c.o);
   for(v=0;v<f.d;v++)for(u=0;u<f.w;u++)S.grid[idx(ox+u,oy+v)]=null;
@@ -1386,7 +1398,7 @@ function infoAt(S,x,y){
 function anchorFor(id,hx,hy,o){var f=footprint(id,o);return {x:hx-Math.floor((f.w-1)/2),y:hy-Math.floor((f.d-1)/2)};}
 
 /* ---------------- Nueva partida ---------------- */
-function cleanName(s){s=String(s||'').replace(/[<>&"]/g,'').trim().slice(0,28);return s||'Valdeolivas';}
+function cleanName(s){s=String(s||'').replace(/[<>&"]/g,'').trim().slice(0,28);return s||'Hervás';}
 function newGame(opts){
   opts=opts||{};
   var seed=(opts.seed==null?Math.floor(Math.random()*4294967296):opts.seed)>>>0;
@@ -1401,6 +1413,7 @@ function newGame(opts){
     props:[],gridVersion:1,exploredVersion:1,outbox:[]};
   var T=CFG.TOWN,x;
   reveal(S,T.x+1,T.y+2,CFG.START_REVEAL);
+  if(opts.explored!==false){S.explored.fill(1);S.exploredVersion++;}
   putCells(S,'ayuntamiento',T.x,T.y,0);
   for(x=T.x-6;x<=T.x+8;x++)putCells(S,'calle',x,T.y+2,0);
   [[T.x-5,T.y+1,'casa'],[T.x-3,T.y+1,'casa'],[T.x-1,T.y+1,'ultramarinos'],[T.x+2,T.y+1,'panaderia'],[T.x+3,T.y+1,'casa'],[T.x+5,T.y+1,'casa'],[T.x+7,T.y+1,'taller'],
@@ -1414,7 +1427,7 @@ function newGame(opts){
 
 /* ---------------- Ciudad de demostración para la portada ---------------- */
 function demoGame(){
-  var S=newGame({seed:20260,town:'Valdeolivas',level:'creativo'}),N=CFG.COLS*CFG.ROWS,x,y,i;
+  var S=newGame({seed:20260,town:'Hervás',level:'creativo'}),N=CFG.COLS*CFG.ROWS,x,y,i;
   S.explored.fill(1);S.exploredVersion++;
   for(i=0;i<N;i++)S.grid[i]=null;
   S.date={y:2026,m:4,d:18};S.dayIndex=dayIndexOf(2026,4,18);S.pop=2100;S.maxPop=2100;S.speed=1;
@@ -3612,6 +3625,22 @@ function spriteH(df,l){
   return 70+(df.job==='industry'?30:0);
 }
 function makeCanvas(w,h){var c=document.createElement('canvas');c.width=Math.max(1,Math.ceil(w));c.height=Math.max(1,Math.ceil(h));return c;}
+
+/* ---- cachés de dibujo: se rasteriza una vez y luego se estampa (mismo aspecto, mucho menos trabajo por fotograma) ---- */
+var xCache={},xN=0,xKeep=0;
+function xGet(key,W,H,AX,AY,sc,fn){
+  var e=xCache[key];if(e)return e;
+  if(xN>3000){xCache={};xN=0;}
+  var cv=makeCanvas(W*sc,H*sc),cx=cv.getContext('2d');
+  cx.scale(sc,sc);cx.translate(AX,AY);cx.lineJoin='round';fn(cx);
+  e={cv:cv,w:cv.width/sc,h:cv.height/sc,ax:AX,ay:AY};xCache[key]=e;xN++;return e;
+}
+function vegStamp(c,sp,x,y,sz,doy,rs,sw,dpr){
+  var szq=Math.round(sz*32)/32,rsq=Math.round(rs*12)/12,dq=Math.round(doy/8)*8,swq=Math.round(sw*3)/3;
+  var W=Math.ceil(96*szq),H=Math.ceil(92*szq),AX=Math.ceil(48*szq),AY=Math.ceil(74*szq);
+  var e=xGet('v|'+sp+'|'+szq+'|'+rsq+'|'+dq+'|'+swq+'|'+dpr,W,H,AX,AY,dpr,function(cx){drawVeg(cx,sp,0,0,szq,dq,rsq,swq);});
+  c.drawImage(e.cv,x-e.ax,y-e.ay,e.w,e.h);
+}
 function getSprite(df,l,vr,o,zoom,dpr){
   o=o?1:0;
   var s=zoom*dpr,key=df.id+'|'+l+'|'+vr+'|'+o+'|'+s;
@@ -3805,7 +3834,7 @@ function drawVeg(c,sp,x,y,sz,doy,rs,sway){
 
 /* ---------- escena ---------- */
 function Scene(cv){
-  this.cv=cv;this.ctx=cv.getContext('2d');this.S=null;this.cx=32;this.cy=32;this.zoom=1;
+  this.cv=cv;this.ctx=cv.getContext('2d',{alpha:false});this.S=null;this.cx=32;this.cy=32;this.zoom=1;
   this.w=300;this.h=200;this.dpr=1;this.time=0;this.hoverTile=null;this.ghost=null;this.sel=null;this.range=null;
   this.agents=[];this.boats=[];this.ducks=[];this.waterCells=[];this.waterEV=-1;this.parts=[];this.roadCells=[];this.roadV=-1;this.showAgents=true;this.dayNight=true;this.edge=1;this.skipFog=false;
   this.stats={tiles:0};
@@ -3849,20 +3878,30 @@ function wideLR(g,C,R,ci,dx,dy){
 /* ---------- vida en locales: jugadores de pádel/fútbol, clientes en terrazas ---------- */
 var VPANT=['#2f4a7a','#3a3a4a','#4a5a3a','#6a4a3a','#2a2a30'],VSHIRT=['#d9423c','#2f6da8','#3f8f4a','#e0a830','#8a4a9a','#f2f2f2','#f08a3a','#2fa8a0'],VSKIN=['#e8c39a','#c68c5e','#f1d3b0','#9a6a44'],VHAIR=['#2a1a10','#5a3a1a','#c9a040','#111','#8a3a1a'];
 function vStand(c,x,y,z,k,run,rk){
-  var sw=Math.sin(run)*1.6,sh=VSHIRT[k%8],pn=VPANT[(k*3)%5],sk=VSKIN[(k*5)%4],hr=VHAIR[(k*7)%5];
-  c.save();c.translate(x,y);c.scale(z*0.9,z*0.9);
+  var swq=Math.round(Math.sin(run)*1.6/0.3)*0.3,rq=rk?Math.round(Math.sin(rk)/0.25)*0.25:null,zz=Math.round(z*0.9*64)/64,kk=((k%40)+40)%40,dpr=window.devicePixelRatio||1;
+  var e=xGet('s|'+kk+'|'+swq+'|'+rq+'|'+zz+'|'+dpr,22,26,11,20,zz*dpr,function(cx){vStandRaw(cx,0,0,1,kk,swq,rq);});
+  c.drawImage(e.cv,x-e.ax*zz,y-e.ay*zz,e.w*zz,e.h*zz);
+}
+function vStandRaw(c,x,y,z,k,sw,rkS){
+  var rk=rkS!==null,sh=VSHIRT[k%8],pn=VPANT[(k*3)%5],sk=VSKIN[(k*5)%4],hr=VHAIR[(k*7)%5];
+  c.save();c.translate(x,y);c.scale(z,z);
   c.fillStyle='rgba(0,0,0,.2)';c.beginPath();c.ellipse(0,0.4,3,1.2,0,0,6.2832);c.fill();
   c.strokeStyle=pn;c.lineWidth=1.5;c.lineCap='round';c.beginPath();c.moveTo(-0.8,-5.2);c.lineTo(-0.8-sw*0.5,0);c.moveTo(0.8,-5.2);c.lineTo(0.8+sw*0.5,0);c.stroke();
   c.fillStyle=sh;c.beginPath();c.roundRect?c.roundRect(-2.2,-10,4.4,5.4,1.2):c.rect(-2.2,-10,4.4,5.4);c.fill();
   c.strokeStyle=sk;c.lineWidth=1.1;c.beginPath();c.moveTo(-2,-9);c.lineTo(-3.2,-6.6+sw*0.3);c.moveTo(2,-9);
-  if(rk){c.lineTo(4.2,-11.5+Math.sin(rk)*2.2);c.stroke();c.strokeStyle='#d8d8d8';c.lineWidth=0.7;c.beginPath();c.moveTo(4.2,-11.5+Math.sin(rk)*2.2);c.lineTo(5.4,-14.2+Math.sin(rk)*2.6);c.stroke();c.fillStyle='#e8503a';c.beginPath();c.ellipse(5.6,-15.2+Math.sin(rk)*2.6,1.7,2.1,0.3,0,6.2832);c.fill();}
+  if(rk){c.lineTo(4.2,-11.5+rkS*2.2);c.stroke();c.strokeStyle='#d8d8d8';c.lineWidth=0.7;c.beginPath();c.moveTo(4.2,-11.5+rkS*2.2);c.lineTo(5.4,-14.2+rkS*2.6);c.stroke();c.fillStyle='#e8503a';c.beginPath();c.ellipse(5.6,-15.2+rkS*2.6,1.7,2.1,0.3,0,6.2832);c.fill();}
   else{c.lineTo(3.2,-6.6-sw*0.3);c.stroke();}
   c.fillStyle=sk;c.beginPath();c.arc(0,-12.2,2.1,0,6.2832);c.fill();c.fillStyle=hr;c.beginPath();c.arc(0,-12.9,2.15,Math.PI,0);c.fill();
   c.restore();
 }
 function vSit(c,x,y,z,k,t,drink){
-  var sh=VSHIRT[k%8],sk=VSKIN[(k*5)%4],hr=VHAIR[(k*7)%5],lift=drink?Math.max(0,Math.sin(t*0.9+k*2.1))*2.4:0;
-  c.save();c.translate(x,y);c.scale(z*0.9,z*0.9);
+  var lq=drink?Math.round(Math.max(0,Math.sin(t*0.9+k*2.1))*2.4/0.4)*0.4:0,zz=Math.round(z*0.9*64)/64,kk=((k%40)+40)%40,dpr=window.devicePixelRatio||1;
+  var e=xGet('t|'+kk+'|'+lq+'|'+(drink?1:0)+'|'+zz+'|'+dpr,18,24,9,19,zz*dpr,function(cx){vSitRaw(cx,0,0,1,kk,lq,drink);});
+  c.drawImage(e.cv,x-e.ax*zz,y-e.ay*zz,e.w*zz,e.h*zz);
+}
+function vSitRaw(c,x,y,z,k,lift,drink){
+  var sh=VSHIRT[k%8],sk=VSKIN[(k*5)%4],hr=VHAIR[(k*7)%5];
+  c.save();c.translate(x,y);c.scale(z,z);
   c.fillStyle=VPANT[(k*3)%5];c.fillRect(-2.2,-2.4,4.4,1.6);
   c.fillStyle=sh;c.fillRect(-2.2,-7.8,4.4,5.8);
   c.strokeStyle=sk;c.lineWidth=1.1;c.lineCap='round';c.beginPath();c.moveTo(-2,-6.6);c.lineTo(-3,-4);c.moveTo(2,-6.6);c.lineTo(3.4,-5.2-lift);c.stroke();
@@ -3898,6 +3937,33 @@ function venueLife(c,it,z,t,night,rain){
     for(i=0;i<pls.length;i++){var P3=pls[i];c.save();vStand(c,P3[0][0],P3[0][1],z,P3[3]?5:0+ (P3[1]%3===0?1:3),P3[2]*2.2,0);c.restore();}
     var bpp=WP(Math.max(0.3,Math.min(w-0.3,bx)),Math.max(0.3,Math.min(d-0.3,by)),2.4+Math.abs(Math.sin(t*3))*1.2);
     c.fillStyle='#fff';c.beginPath();c.arc(bpp[0],bpp[1],Math.max(1,1.6*z),0,6.2832);c.fill();c.restore();return;
+  }
+
+  /* niños jugando en plazas y parques */
+  var KZ={fountain:['c',0.5,0.5,0.72],plazaagua:['r',0.7,0.7,2.3,2.3],lago:['c',0.5,0.5,1.12],park:['c',0.3,0.3,0.4],bigpark:['c',0.3,0.3,0.74],plazamonu:['r',0.45,0.45,1.55,1.55],templete:['c',0.5,0.5,0.72]};
+  var KID={plazuela:1,fountain:1,plazamayor:1,plazamonu:1,templete:1,plazaagua:1,garden:1,playground:1,park:1,bigpark:1,arearec:1,lago:1};
+  if(KID[s]){
+    if(night>0.5||rain)return;
+    var sk2=slotP(38,3),nk=sk2[0]<0.25?0:(sk2[0]<0.6?2:(sk2[0]<0.85?3:5));if(!nk)return;
+    var kw=df.w,kd=df.d,kz=0.5,ks=[],ky;if(s==='playground'||s==='arearec')kz=0.3;
+    c.save();c.globalAlpha=sk2[1];
+    var ax0=kw*0.28,ay0=kd*0.72,bx0=kw*0.5,by0=kd*0.82,bph=(Math.sin(t*1.6+H*6)+1)/2;
+    for(i=0;i<nk;i++){var ku,kv,kc;
+      if(i===0){ku=ax0+Math.sin(t*0.9)*0.08;kv=ay0+Math.cos(t*1.1)*0.06;}
+      else if(i===1){ku=bx0+Math.cos(t*1.0)*0.08;kv=by0+Math.sin(t*0.8)*0.06;}
+      else{var an=t*(0.45+0.13*i)+i*2.1+H*6;ku=kw/2+(kw/2-0.4)*0.8*Math.cos(an);kv=kd/2+(kd/2-0.4)*0.8*Math.sin(an+i);}
+      ku=Math.max(0.3,Math.min(kw-0.3,ku));kv=Math.max(0.3,Math.min(kd-0.3,kv));
+      var zc=KZ[s],zq;if(zc){for(zq=0;zq<2;zq++){ /* fuera del agua y de los monumentos */
+        if(zc[0]==='c'){var zx=ku-zc[1]*kw,zy=kv-zc[2]*kd,zr=zc[3]+0.1,zd2=Math.sqrt(zx*zx+zy*zy)||0.001;if(zd2<zr){ku=zc[1]*kw+zx/zd2*zr;kv=zc[2]*kd+zy/zd2*zr;}}
+        else{var x0=zc[1]-0.1,x1=zc[3]+0.1,y0=zc[2]-0.1,y1=zc[4]+0.1;if(ku>x0&&ku<x1&&kv>y0&&kv<y1){var dl=ku-x0,dr=x1-ku,dt=kv-y0,db=y1-kv,mn=Math.min(dl,dr,dt,db);if(mn===dl)ku=x0;else if(mn===dr)ku=x1;else if(mn===dt)kv=y0;else kv=y1;}}
+        ku=Math.max(0.2,Math.min(kw-0.2,ku));kv=Math.max(0.2,Math.min(kd-0.2,kv));}}
+      ks.push([WP(ku,kv,kz),i,t*(i<2?4:7)+i,ku,kv]);}
+    var bu=ax0,bv=ay0;if(ks.length>1){bu=ks[0][3]+(ks[1][3]-ks[0][3])*bph;bv=ks[0][4]+(ks[1][4]-ks[0][4])*bph;}
+    var bp2=WP(bu,bv,kz+Math.abs(Math.sin(bph*3.1416))*5);
+    ks.sort(function(a,b){return a[0][1]-b[0][1];});
+    for(i=0;i<ks.length;i++){vStand(c,ks[i][0][0],ks[i][0][1],z*0.72,gid*3+ks[i][1]*5+2,ks[i][2],0);}
+    c.fillStyle='#fff';c.strokeStyle='#d9423c';c.lineWidth=0.6;c.beginPath();c.arc(bp2[0],bp2[1],Math.max(1.2,1.9*z),0,6.2832);c.fill();c.stroke();
+    c.restore();return;
   }
   /* terrazas */
   var tabs=null,w2=df.w,d2=df.d,drink=true;
@@ -4257,7 +4323,7 @@ Scene.prototype.render=function(vdt,realDt){
       }else{
         var fw=cell.o?df.d:df.w,fd=cell.o?df.w:df.d,d0=i+fw-1+j+fd-1;
         var vr=(hash(i,j,5)*32)|0;
-        if(df.vis.flat){flats.push([df,cell.l,vr,px,py,cell.o?1:0]);}
+        if(df.vis.flat){flats.push([df,cell.l,vr,px,py,cell.o?1:0]);tall[Math.min(d0,139)].push({k:6,df:df,px:px,py:py,o:cell.o?1:0,gid:i*131+j});}
         else{tall[Math.min(d0,139)].push({k:0,df:df,l:cell.l,vr:vr,px:px,py:py,o:cell.o?1:0,gid:i*131+j});
           if(df.cat!=='deco'&&!df.prop){brects.push([i,j,fw,fd,d0]);for(var by2=j;by2<j+fd&&by2<R;by2++)for(var bx2=i;bx2<i+fw&&bx2<C;bx2++)bocc[by2*C+bx2]=brects.length;}}
       }
@@ -4333,6 +4399,8 @@ Scene.prototype.render=function(vdt,realDt){
         c.drawImage(sp3.cv,Math.round(it.px-sp3.ox*z),Math.round(it.py-sp3.oy*z),sp3.cv.width/dpr,sp3.cv.height/dpr);
         if(this.showAgents&&z>=0.55&&it.gid!==undefined){var vs=it.df.vis.s;if(vs==='padel'||vs==='pitch'||vs==='shop'||vs==='fast'||vs==='bar')venueLife(c,it,z,this.time,this.nightF||0,S.weather&&S.weather.type==='rain');}
         if(this.nightF>0.05&&it.df.cat!=='road'&&it.df.job!=='industry'&&it.df.cat!=='water'&&it.df.cat!=='transport')this.glows.push([it.px,it.py-sp3.oy*z*0.18+(sp3.cv.height/dpr)*0.0,Math.min(70,14+(it.df.w+it.df.d)*9)*z,1,it.px*0.013+it.py*0.007]);
+      }else if(it.k===6){
+        if(this.showAgents&&z>=0.55)venueLife(c,it,z,this.time,this.nightF||0,S.weather&&S.weather.type==='rain');
       }else if(it.k===5){
         var sp5=getSprite(it.df,0,it.vr,it.o||0,z,dpr);
         c.drawImage(sp5.cv,Math.round(it.px-sp5.ox*z),Math.round(it.py-sp5.oy*z),sp5.cv.width/dpr,sp5.cv.height/dpr);
@@ -4356,7 +4424,7 @@ Scene.prototype.render=function(vdt,realDt){
         hullAt(c,0,0,al,sg,B.col,B.kind===0?0:(B.kind===1?1:2),0.2);
         c.restore();
       }else if(it.k===1){
-        drawVeg(c,it.sp,it.px,it.py,it.sz,doy,it.rs,sway*(1.2+it.rs));
+        vegStamp(c,it.sp,it.px,it.py,it.sz,doy,it.rs,sway*(1.2+it.rs),dpr);
       }else{
         c.save();c.translate(it.px,it.py);c.scale(z,z);
         var A2=it.a;
@@ -4396,7 +4464,7 @@ Scene.prototype.render=function(vdt,realDt){
         }else{
           var alongU=it.dx!==0,vt=A2.vt||'car',sg=(alongU?it.dx:it.dy)||1;
           if(this.nightF>0.05)this.glows.push([it.px+(alongU?sg*0:0),it.py-4*z,22*z,3,sg*(alongU?1:-1)*(alongU?1:1)]);
-          if(vt==='bus'||vt==='truck'||vt==='van'){heavyAt(c,alongU,sg,vt,A2);}else{vehAt(c,alongU,sg,vt,A2);
+          var vvk=(A2.uid||0)%12,vve=xGet('c|'+vt+'|'+(alongU?1:0)+'|'+sg+'|'+A2.col+'|'+(A2.liv|0)+'|'+vvk+'|'+z+'|'+dpr,84,70,42,52,z*dpr,function(cx){var Al={uid:vvk,col:A2.col,liv:A2.liv,ci:0};if(vt==='bus'||vt==='truck'||vt==='van'){heavyAt(cx,alongU,sg,vt,Al);}else{vehAt(cx,alongU,sg,vt,Al);}});c.drawImage(vve.cv,-vve.ax,-vve.ay,vve.w,vve.h);if(false){
           }
         }
         c.restore();
@@ -4904,9 +4972,9 @@ function dayLabel(di){var d=di-S.dayIndex;return d<=0?'hoy':(d===1?'mañana':'de
 /* ---------------- ayuntamiento / ciudad ---------------- */
 var PART_NAMES={base:'Base',empleo:'Empleo',guarderia:'Guarderías',colegio:'Colegios',instituto:'Institutos',fp:'FP',universidad:'Universidad',sanidad:'Sanidad',
   deporte:'Deporte',cultura:'Cultura',parques:'Parques',transporte:'Transporte',plazas:'Plazas',alumbrado:'Alumbrado',mobiliario:'Mobiliario urbano',
-  comercio:'Comercio y variedad',viales:'Calles peatonales y paseos',contaminacion:'Molestias de la industria',impuestos:'Impuestos',hacinamiento:'Viviendas llenas',deuda:'Deuda',eventos:'Acontecimientos'};
+  comercio:'Comercio y variedad',viales:'Calles peatonales y paseos',contaminacion:'Molestias de la industria (ruido y humos)',impuestos:'Impuestos',hacinamiento:'Viviendas llenas',deuda:'Deuda',eventos:'Acontecimientos'};
 function openCity(){
-  var m=Core.metrics(S),p=m.sat.parts,at=m.at,cov=m.A.cov;
+  var m=Core.metrics(S),p=m.sat.parts,at=m.at,cov=m.A.covAny||m.A.cov;
   var mood=at.A>0.25?'Alto':(at.A>0.05?'Medio':(at.A>-0.05?'Bajo':'Negativo'));
   var why=[];
   if(at.jobF<-0.1)why.push('hay más vecinos en edad de trabajar que empleos');
@@ -4996,20 +5064,24 @@ function openHow(){
   openModal('❓ Cómo se juega',h,true);
 }
 function openNew(){
-  var names=CFG.TOWN_NAMES,def=names[Math.floor(Math.random()*names.length)],lvl='normal';
+  var names=CFG.TOWN_NAMES,def=names[Math.floor(Math.random()*names.length)],lvl='normal',mapEx=true,armed=false;
   var cards=Object.keys(CFG.LEVELS).map(function(k){var l=CFG.LEVELS[k];
     return '<label class="lvl'+(k===lvl?' on':'')+'" data-k="'+k+'"><input type="radio" name="lv" value="'+k+'"'+(k===lvl?' checked':'')+'><b>'+l.icon+' '+l.name+'</b> <em>'+sep(l.money)+' €</em><small>'+l.desc+'</small></label>';}).join('');
   openModal('🏗️ Nueva partida','<span class="fld">Nombre del pueblo</span><div class="namerow"><input type="text" id="ngName" maxlength="28" value="'+def+'" autocomplete="off"><button class="btn" id="ngDice" title="Nombre aleatorio">🎲</button></div>'+
     '<span class="fld">Nivel de dificultad</span><div class="lvls">'+cards+'</div>'+
+    '<span class="fld">Mapa</span><div class="mapopt"><label class="on" data-m="1"><input type="radio" name="mp" checked><b>🗺️ Explorado</b><small>Ves todo el terreno desde el principio</small></label><label data-m="0"><input type="radio" name="mp"><b>🧭 Por descubrir</b><small>Se va revelando al construir y mover el mapa</small></label></div>'+
     '<div class="btnrow" style="margin-top:16px;justify-content:flex-end"><button class="btn" id="ngCancel">Cancelar</button><button class="btn primary big" id="ngGo">🏗️ ¡Empezar!</button></div>',true);
   $$('.lvl').forEach(function(el){el.onclick=function(){lvl=el.dataset.k;$$('.lvl').forEach(function(x){x.classList.toggle('on',x===el);});Sound.sfx('click');};});
+  $$('.mapopt label').forEach(function(el){el.onclick=function(){mapEx=el.dataset.m==='1';$$('.mapopt label').forEach(function(x){x.classList.toggle('on',x===el);});Sound.sfx('click');};});
   $('#ngDice').onclick=function(){$('#ngName').value=names[Math.floor(Math.random()*names.length)];Sound.sfx('click');};
   $('#ngCancel').onclick=closeModal;
   function go(){
     var nm=Core.cleanName($('#ngName').value);
-    var cur=hasSave();
-    if(cur&&!confirm('Ya tienes una partida guardada. Si empiezas otra y se guarda, se sustituirá. ¿Continuar?'))return;
-    closeModal();startGame(Core.newGame({town:nm,level:lvl}),'¡Bienvenido a '+nm+', alcalde!');
+    if(hasSave()&&!armed){ /* aviso dentro del juego (los confirm() del navegador a veces se bloquean) */
+      armed=true;var gb=$('#ngGo');gb.textContent='⚠️ Sustituirá tu partida guardada · pulsa otra vez';gb.classList.add('danger');return;
+    }
+    try{closeModal();startGame(Core.newGame({town:nm,level:lvl,explored:mapEx}),'¡Bienvenido a '+nm+', alcalde!');}
+    catch(err){toast('No se pudo crear la partida: '+(err&&err.message||err),'bad');}
   }
   $('#ngGo').onclick=go;
   $('#ngName').onkeydown=function(e){if(e.key==='Enter')go();};
@@ -5151,12 +5223,12 @@ function updateHUD(){
   if(tool==='info'&&selected)renderTip();
 }
 function demands(m){
-  var out=[];if(m.pop<20)return out;var c=m.A.cov;
+  var out=[];if(m.pop<20)return out;var c=m.A.covAny||m.A.cov;
   if(m.vacantHousing<=0&&m.pop>=20)out.push('Viviendas');
   if(m.L.workers>0&&m.L.unemployed/m.L.workers>0.18)out.push('Empleo');
   var T=[['health','Sanidad',40],['primary','Colegio',60],['kinder','Guardería',120],['secondary','Instituto',200],['park','Parques',50],['plaza','Plazas',50],['transport','Transporte',250],['light','Alumbrado',40],['sport','Deporte',150],['culture','Cultura',200]];
-  T.forEach(function(t){if(m.pop>=t[2]&&(c[t[0]]||0)<0.4)out.push(t[1]);});
-  if(c.nuis>0.35)out.push('Contaminación');
+  T.forEach(function(t){if(m.pop>=t[2]&&(c[t[0]]||0)<0.6)out.push(t[1]);});
+  if(m.A.cov.nuis>0.35)out.push('Contaminación');
   return out;
 }
 $('#stMoney').onclick=function(){openReports('economia');};
@@ -5431,7 +5503,6 @@ function startGame(state,msg){
   buildCats();buildItems();resize();updateHUD();renderTip();
   Sound.start('game');applyOpts();camMoved=true;
   if(msg)toast(msg,'ok');
-  setTimeout(function(){var f=$('#fogNote');f.classList.add('on');setTimeout(function(){f.classList.remove('on');},5200);},900);
 }
 $('#mbContinue').onclick=function(){var n=load();if(n)startGame(n,'Partida cargada · '+Core.fmtDate(n.date));else{toast('No se pudo leer la partida guardada.','bad');$('#mbContinue').hidden=true;}Sound.sfx('click');};
 $('#mbNew').onclick=function(){Sound.sfx('click');openNew();};
@@ -5470,13 +5541,13 @@ var TIPS=[
    x:'Hay edificios que no llegan hasta el Ayuntamiento por carretera y no funcionan. Prolonga una calle hasta ellos.'},
   {id:'mobiliario',when:function(m){return m.pop>=15;},ic:'💡',t:'Farolas y bancos',
    x:'Las farolas, los bancos y las señales se colocan en el borde de la calle, entre la casa y la carretera. Mejoran la satisfacción y no necesitan solar.',go:'urban:light',gl:'Abrir Alumbrado'},
-  {id:'luz',when:function(m){return m.pop>=30&&(m.A.cov.light||0)<0.35;},ic:'🔦',t:'Calles a oscuras',
+  {id:'luz',when:function(m){return m.pop>=30&&((m.A.covAny||m.A.cov).light||0)<0.6;},ic:'🔦',t:'Calles a oscuras',
    x:'Tus vecinos piden alumbrado. Con unas farolas repartidas por las calles subirá la satisfacción.',go:'urban:light',gl:'Abrir Alumbrado'},
-  {id:'salud',when:function(m){return m.pop>=40&&(m.A.cov.health||0)<0.4;},ic:'🩺',t:'Un médico para el pueblo',
+  {id:'salud',when:function(m){return m.pop>=40&&((m.A.covAny||m.A.cov).health||0)<0.6;},ic:'🩺',t:'Un médico para el pueblo',
    x:'Ya sois bastantes: un consultorio cerca de las casas aumenta mucho la satisfacción.',go:'health',gl:'Abrir Sanidad'},
-  {id:'colegio',when:function(m){return m.pop>=60&&(m.A.cov.primary||0)<0.4;},ic:'🎓',t:'Los niños necesitan colegio',
+  {id:'colegio',when:function(m){return m.pop>=60&&((m.A.covAny||m.A.cov).primary||0)<0.6;},ic:'🎓',t:'Los niños necesitan colegio',
    x:'Un colegio cerca de las casas atrae familias jóvenes y hace que el pueblo crezca mejor.',go:'edu',gl:'Abrir Educación'},
-  {id:'parque',when:function(m){return m.pop>=45&&(m.A.cov.park||0)<0.35;},ic:'🌳',t:'Un poco de verde',
+  {id:'parque',when:function(m){return m.pop>=45&&((m.A.covAny||m.A.cov).park||0)<0.6;},ic:'🌳',t:'Un poco de verde',
    x:'Un jardín o una plazuela arbolada cerca de las casas sube el ánimo y cuesta poco.',go:'urban:park',gl:'Abrir Parques'},
   {id:'mejorar',when:function(m,S){return m.A.dwellings>=4&&S.money>1500&&m.pop>=30;},ic:'⬆️',t:'Mejora lo que ya tienes',
    x:'La herramienta Mejorar amplía casas, tiendas y servicios: más vecinos, más empleos y más impuestos sin gastar más terreno.'},
@@ -5492,7 +5563,7 @@ var TIPS=[
    x:'Cuantos más tipos de comercio distintos haya (bares, tiendas, comida rápida…), más compran tus vecinos.',go:'retail:alim',gl:'Abrir Comercios'},
   {id:'oficinas',when:function(m){return m.pop>=300;},ic:'🏢',t:'Ya puedes pensar en oficinas',
    x:'Las oficinas pagan más impuestos que las tiendas. Combínalas con universidad y FP para sacarles partido.',go:'office',gl:'Abrir Oficinas'},
-  {id:'transporte',when:function(m){return m.pop>=250&&(m.A.cov.transport||0)<0.35;},ic:'🚌',t:'Transporte público',
+  {id:'transporte',when:function(m){return m.pop>=250&&((m.A.covAny||m.A.cov).transport||0)<0.6;},ic:'🚌',t:'Transporte público',
    x:'Con una ciudad grande hacen falta paradas y estaciones de autobús para que la gente se mueva.',go:'transport',gl:'Abrir Transporte'},
   {id:'fin',when:function(m){return m.pop>=2000;},ic:'🏙️',t:'¡Una ciudad de verdad!',
    x:'Ya conoces lo básico. Sigue ampliando: rascacielos, estaciones, hospitales y un buen puerto. Puedes desactivar los consejos desde Opciones.'}
@@ -5556,7 +5627,7 @@ function frame(now){
       if(S.dayIndex!==lastDay){lastDay=S.dayIndex;hudT=9;}
       hudT+=dt;if(hudT>0.25){hudT=0;updateHUD();}
       scene.render((modalHold||!$('#modal').hidden)?0:dt*vm,dt);
-      miniT+=dt;if(miniT>0.12){miniT=0;Art.minimap(S,mini,scene);}
+      
     }else if(mode==='title'&&demo){
       titleT+=dt;
       scene.cx=32+Math.cos(titleT*0.07)*4.5;scene.cy=33+Math.sin(titleT*0.09)*3;
